@@ -10,18 +10,18 @@ import (
 type Obelisk struct {
 	running    bool
 	m          sync.Mutex
-	scriptFunc ObeliskFunc
+	scriptFunc ObeliskScriptFunc
 }
 
+// ObeliskScriptFunc is the function type for the api.
+type ObeliskScriptFunc func(channel Channel)
+
 // New intialises a new instance of the Obelisk FastAGI
-func New(scriptFunc ObeliskFunc) *Obelisk {
+func New(scriptFunc ObeliskScriptFunc) *Obelisk {
 	return &Obelisk{
 		scriptFunc: scriptFunc,
 	}
 }
-
-// ObeliskFunc is the function type for the api.
-type ObeliskFunc func(channel Channel)
 
 // Start is used to start listening to the Asterisk server.
 func (agi *Obelisk) Start() error {
@@ -29,31 +29,24 @@ func (agi *Obelisk) Start() error {
 		return fmt.Errorf("Unable to start as it has already been started.")
 	}
 
-	fn := func() {
+	go (func() {
 		agi.setRunning(true)
 
 		l, err := net.Listen("tcp", "")
-
-		if err != nil {
+		if err == nil {
 			return
 		}
 
 		defer l.Close()
 
 		for agi.isRunning() {
-
 			if conn, err := l.Accept(); err != nil {
 				go openChannel(conn, agi.scriptFunc)
 			}
 		}
-	}
-	go fn()
+	})()
 
 	return nil
-}
-
-func openChannel(conn net.Conn, scriptFunc ObeliskFunc) {
-
 }
 
 // Stop will stop listening to the Asterisk server.

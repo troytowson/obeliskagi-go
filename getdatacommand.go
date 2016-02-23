@@ -1,4 +1,4 @@
-package obelisk
+package obeliskagi
 
 import "fmt"
 
