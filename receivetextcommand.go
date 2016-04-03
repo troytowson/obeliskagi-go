@@ -7,7 +7,7 @@ type receiveTextCommand struct {
 }
 
 func (cmd *receiveTextCommand) compile() string {
-	return fmt.Sprintf("RECEIVE TEXT %s", cmd.timeout)
+	return fmt.Sprintf("RECEIVE TEXT %d", cmd.timeout)
 }
 
 // ReceiveText will recieve text.

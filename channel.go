@@ -24,24 +24,29 @@ func openChannel(conn net.Conn, scriptFunc ObeliskScriptFunc) {
 }
 
 func (chnl *Channel) readContext() {
-	var lines []string
-	for {
-		ln, _, err := chnl.reader.ReadLine()
-
-		if err == io.EOF {
-			break
-		}
-
-		lines = append(lines, string(ln))
-	}
-
+	lines := readLines(chnl.reader)
 	chnl.Ctx = newContext(lines)
 }
 
 // SendCommand will send the command on the current channel
-func (chnl *Channel) SendCommand(cmd Command) {
-	/*chnl.writer.WriteString(cmd.compile())
-	if _, err := chnl.reader.ReadString('\n'); err != nil {
+func (chnl *Channel) SendCommand(cmd Command) *Reply {
+	chnl.writer.WriteString(cmd.compile())
+	var ln string
+	lns := readLines(chnl.reader)
+	for _, l := range lns {
+		ln += l
+	}
+	return newReply(ln)
+}
 
-	}*/
+func readLines(r *bufio.Reader) []string {
+	var lines []string
+	for {
+		ln, err := r.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+		lines = append(lines, ln)
+	}
+	return lines
 }
