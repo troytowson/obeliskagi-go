@@ -8,35 +8,26 @@ import (
 
 // Channel is the means of communication between the asterisk server and you.
 type Channel struct {
-	reader *bufio.Reader
-	writer *bufio.Writer
-	Ctx    *Context
+	reader  *bufio.Reader
+	writer  *bufio.Writer
+	Context *Context
 }
 
-func openChannel(conn net.Conn, scriptFunc ObeliskScriptFunc) {
-	channel := &Channel{
+func newChannel(conn net.Conn) *Channel {
+	return &Channel{
 		reader: bufio.NewReader(conn),
 		writer: bufio.NewWriter(conn),
 	}
+}
 
-	channel.readContext()
+func openChannel(conn net.Conn, logger StandardLogger, scriptFunc ObeliskScriptFunc) {
+	defer conn.Close()
+
+	channel := newChannel(conn)
+	channel.fetchContext()
+
 	scriptFunc(*channel)
-}
 
-func (chnl *Channel) readContext() {
-	lines := readLines(chnl.reader)
-	chnl.Ctx = newContext(lines)
-}
-
-// SendCommand will send the command on the current channel
-func (chnl *Channel) SendCommand(cmd Command) *Reply {
-	chnl.writer.WriteString(cmd.compile())
-	var ln string
-	lns := readLines(chnl.reader)
-	for _, l := range lns {
-		ln += l
-	}
-	return newReply(ln)
 }
 
 func readLines(r *bufio.Reader) []string {
@@ -49,4 +40,24 @@ func readLines(r *bufio.Reader) []string {
 		lines = append(lines, ln)
 	}
 	return lines
+}
+
+func (chnl *Channel) fetchContext() {
+	lines := readLines(chnl.reader)
+	chnl.Context = newContext(lines)
+}
+
+func (chnl *Channel) readReply() *Reply {
+	var ln string
+	lns := readLines(chnl.reader)
+	for _, l := range lns {
+		ln += l
+	}
+	return newReply(ln)
+}
+
+// SendCommand will send the command on the current channel
+func (chnl *Channel) SendCommand(cmd Command) *Reply {
+	chnl.writer.WriteString(cmd.compile())
+	return chnl.readReply()
 }

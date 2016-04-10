@@ -1,9 +1,6 @@
 package obeliskagi
 
-import (
-	"bytes"
-	"strings"
-)
+import "strings"
 
 const (
 	agiRquest          = "agi_request"
@@ -87,19 +84,13 @@ func newContext(lines []string) *Context {
 
 func mapLinesToFields(lines []string, actions map[string]func(string)) {
 	for _, ln := range lines {
-		var bf bytes.Buffer
 		var k string
+		var v string
 
-		for _, c := range ln {
-			if c == ':' && k == "" {
-				k = bf.String()
-				bf.Reset()
-				continue
-			}
-			bf.WriteRune(c)
+		if i := strings.Index(ln, ":"); i > 0 && len(ln) > i+1 {
+			k = ln[:i]
+			v = ln[i+1:]
 		}
-
-		v := bf.String()
 
 		if a, ok := actions[k]; ok && strings.HasPrefix(k, "agi_") {
 			a(strings.TrimSpace(v))

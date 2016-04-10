@@ -18,11 +18,7 @@ func TestMapLinesToFields(t *testing.T) {
 func BenchmarkMapLinesToFields(t *testing.B) {
 
 	lines := []string{"agi_test:test"}
-	actions := map[string]func(string){"agi_test": func(val string) {
-		if val != "test" {
-			t.Fatal("E")
-		}
-	}}
+	actions := map[string]func(string){"agi_test": func(val string) {}}
 
 	for n := 0; n < t.N; n++ {
 		mapLinesToFields(lines, actions)

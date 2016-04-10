@@ -1,50 +1,44 @@
 package obeliskagi
 
 import (
-	"fmt"
 	"net"
 	"sync"
 )
 
 // Obelisk is the struct which contains all the info to run obeliskagi.
 type Obelisk struct {
-	running    bool
-	m          sync.Mutex
-	scriptFunc ObeliskScriptFunc
+	running bool
+	m       sync.Mutex
+	config  Configuration
 }
 
-// ObeliskScriptFunc is the function type for the api.
-type ObeliskScriptFunc func(channel Channel)
-
 // New intialises a new instance of the Obelisk FastAGI
-func New(scriptFunc ObeliskScriptFunc) *Obelisk {
+func New(cfg Configuration) *Obelisk {
 	return &Obelisk{
-		scriptFunc: scriptFunc,
+		config: cfg,
 	}
 }
 
 // Start is used to start listening to the Asterisk server.
 func (agi *Obelisk) Start() error {
-	if agi.isRunning() {
-		return fmt.Errorf("Unable to start as it has already been started.")
+	l, err := net.Listen("tcp", agi.config.Address)
+	if err != nil {
+		return err
+	}
+	defer l.Close()
+
+	logger := agi.config.Logger
+	if agi.config.LoggingEnabled && logger == nil {
+		logger = newLogger(agi.config.LoggingEnabled)
 	}
 
-	go (func() {
-		agi.setRunning(true)
-
-		l, err := net.Listen("tcp", "")
-		if err == nil {
-			return
+	for agi.isRunning() {
+		conn, err := l.Accept()
+		if err != nil {
+			return err
 		}
-
-		defer l.Close()
-
-		for agi.isRunning() {
-			if conn, err := l.Accept(); err != nil {
-				go openChannel(conn, agi.scriptFunc)
-			}
-		}
-	})()
+		go openChannel(conn, logger, agi.config.ScriptFunc)
+	}
 
 	return nil
 }
