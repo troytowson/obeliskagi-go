@@ -3,13 +3,15 @@ package obeliskagi
 import (
 	"bufio"
 	"io"
+	"io/ioutil"
 	"net"
+	"strings"
 )
 
 // Channel is the means of communication between the asterisk server and you.
 type Channel struct {
-	reader  *bufio.Reader
-	writer  *bufio.Writer
+	reader  io.Reader
+	writer  io.Writer
 	Context *Context
 }
 
@@ -20,44 +22,33 @@ func newChannel(conn net.Conn) *Channel {
 	}
 }
 
-func openChannel(conn net.Conn, logger StandardLogger, scriptFunc ObeliskScriptFunc) {
-	defer conn.Close()
-
-	channel := newChannel(conn)
-	channel.fetchContext()
-
-	scriptFunc(*channel)
-
-}
-
-func readLines(r *bufio.Reader) []string {
-	var lines []string
-	for {
-		ln, err := r.ReadString('\n')
-		if err == io.EOF {
-			break
-		}
-		lines = append(lines, ln)
+func readData(r io.Reader) (string, error) {
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return "", err
 	}
-	return lines
+	return string(b), nil
 }
 
-func (chnl *Channel) fetchContext() {
-	lines := readLines(chnl.reader)
-	chnl.Context = newContext(lines)
-}
-
-func (chnl *Channel) readReply() *Reply {
-	var ln string
-	lns := readLines(chnl.reader)
-	for _, l := range lns {
-		ln += l
+func (chnl *Channel) fetchContext() error {
+	d, err := readData(chnl.reader)
+	if err != nil {
+		return err
 	}
-	return newReply(ln)
+	chnl.Context = newContext(strings.Split(d, "\n"))
+	return nil
+}
+
+func (chnl *Channel) readReply() (*Reply, error) {
+	d, err := readData(chnl.reader)
+	if err != nil {
+		return nil, err
+	}
+	return newReply(d), nil
 }
 
 // SendCommand will send the command on the current channel
-func (chnl *Channel) SendCommand(cmd Command) *Reply {
-	chnl.writer.WriteString(cmd.compile())
+func (chnl *Channel) SendCommand(cmd Command) (*Reply, error) {
+	io.WriteString(chnl.writer, cmd.compile())
 	return chnl.readReply()
 }

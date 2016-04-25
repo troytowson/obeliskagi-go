@@ -5,8 +5,6 @@ type ObeliskScriptFunc func(channel Channel)
 
 // Configuration represents the configuration of obelisk.
 type Configuration struct {
-	Address        string
-	ScriptFunc     ObeliskScriptFunc
-	LoggingEnabled bool
-	Logger         StandardLogger
+	Address    string
+	ScriptFunc ObeliskScriptFunc
 }

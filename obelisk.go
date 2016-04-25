@@ -27,20 +27,18 @@ func (agi *Obelisk) Start() error {
 	}
 	defer l.Close()
 
-	logger := agi.config.Logger
-	if agi.config.LoggingEnabled && logger == nil {
-		logger = newLogger(agi.config.LoggingEnabled)
-	}
-
-	for agi.isRunning() {
+	for {
 		conn, err := l.Accept()
 		if err != nil {
 			return err
 		}
-		go openChannel(conn, logger, agi.config.ScriptFunc)
+		go func(conn net.Conn, scriptFunc ObeliskScriptFunc) {
+			defer conn.Close()
+			channel := newChannel(conn)
+			channel.fetchContext()
+			scriptFunc(*channel)
+		}(conn, agi.config.ScriptFunc)
 	}
-
-	return nil
 }
 
 // Stop will stop listening to the Asterisk server.
