@@ -1,15 +1,23 @@
 package obeliskagi
 
 import (
+	"errors"
+	"log"
 	"net"
-	"sync"
+	"os"
 )
+
+// a logger for logging errors in the go routines
+var errorLogger *log.Logger
+
+// initialisation code.
+func init() {
+	errorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+}
 
 // Obelisk is the struct which contains all the info to run obeliskagi.
 type Obelisk struct {
-	running bool
-	m       sync.Mutex
-	config  Configuration
+	config Configuration
 }
 
 // New intialises a new instance of the Obelisk FastAGI
@@ -19,41 +27,53 @@ func New(cfg Configuration) *Obelisk {
 	}
 }
 
-// Start is used to start listening to the Asterisk server.
-func (agi *Obelisk) Start() error {
-	l, err := net.Listen("tcp", agi.config.Address)
+// Listen is used to start listening to the Asterisk server.
+func (agi *Obelisk) Listen() error {
+	// Assert the address is not empty
+	if agi.config.Address == "" {
+		return errors.New("The address needs to be set.")
+	}
+
+	// Assert that there is at least one script added to the configuration.
+	if len(agi.config.Scripts) > 0 {
+		return errors.New("At least one script should be configured.")
+	}
+
+	// Start listening to the tcp socket.
+	listener, err := net.Listen("tcp", agi.config.Address)
 	if err != nil {
 		return err
 	}
-	defer l.Close()
+	defer listener.Close()
 
 	for {
-		conn, err := l.Accept()
+		connection, err := listener.Accept()
 		if err != nil {
 			return err
 		}
-		go func(conn net.Conn, scriptFunc ObeliskScriptFunc) {
-			defer conn.Close()
-			channel := newChannel(conn)
-			channel.fetchContext()
-			scriptFunc(*channel)
-		}(conn, agi.config.ScriptFunc)
+
+		go func(connection net.Conn, scripts map[string]ScriptFunction) {
+			defer connection.Close()
+
+			ctx, err := fetchContext(connection)
+			if err != nil {
+				errorLogger.Println(err)
+				return
+			}
+
+			channel := &Channel{
+				reader:  connection,
+				writer:  connection,
+				Context: ctx,
+			}
+
+			scriptFunction, found := scripts[channel.Context.Script]
+			if !found {
+				errorLogger.Println("The script could not be found.")
+				return
+			}
+			scriptFunction(*channel)
+
+		}(connection, agi.config.Scripts)
 	}
-}
-
-// Stop will stop listening to the Asterisk server.
-func (agi *Obelisk) Stop() {
-	agi.setRunning(false)
-}
-
-func (agi *Obelisk) isRunning() bool {
-	agi.m.Lock()
-	defer agi.m.Unlock()
-	return agi.running
-}
-
-func (agi *Obelisk) setRunning(run bool) {
-	agi.m.Lock()
-	defer agi.m.Unlock()
-	agi.running = run
 }

@@ -1,6 +1,7 @@
 package obeliskagi
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -25,54 +26,63 @@ func BenchmarkMapLinesToFields(t *testing.B) {
 	}
 }
 
+var (
+	requestStub      = "request"
+	channelStub      = "channel"
+	languageStub     = "language"
+	typeStub         = "type"
+	uniqueIDStub     = "uniqueID"
+	versionStub      = "version"
+	callerIDStub     = "callerID"
+	callerIDNameStub = "callerIDName"
+	callingPresStub  = "callingPres"
+	callingANI2Stub  = "callingANI2"
+	callingTONStub   = "callingTON"
+	callingTNSStub   = "callingTNS"
+	dNIDStub         = "DNID"
+	rDNISStub        = "RDNIS"
+	contextStub      = "context"
+	extensionStub    = "extension"
+	priorityStub     = "priority"
+	enhancedStub     = "enhanced"
+	accountCodeStub  = "accountCode"
+	threadIDStub     = "threadID"
+	scriptStub       = "script"
+)
+
+func createBuffer() *bytes.Buffer {
+	b := &bytes.Buffer{}
+	b.WriteString(agiRequest + ":" + requestStub + "\n")
+	b.WriteString(agiChannel + ":" + channelStub + "\n")
+	b.WriteString(agiLanguage + ":" + languageStub + "\n")
+	b.WriteString(agiType + ":" + typeStub + "\n")
+	b.WriteString(agiUniqueID + ":" + uniqueIDStub + "\n")
+	b.WriteString(agiVersion + ":" + versionStub + "\n")
+	b.WriteString(agiCallerID + ":" + callerIDStub + "\n")
+	b.WriteString(agiCallerIDName + ":" + callerIDNameStub + "\n")
+	b.WriteString(agiCallingPres + ":" + callingPresStub + "\n")
+	b.WriteString(agiCallingANI2 + ":" + callingANI2Stub + "\n")
+	b.WriteString(agiCallingTON + ":" + callingTONStub + "\n")
+	b.WriteString(agiCallingTNS + ":" + callingTNSStub + "\n")
+	b.WriteString(agiDNID + ":" + dNIDStub + "\n")
+	b.WriteString(agiRDNIS + ":" + rDNISStub + "\n")
+	b.WriteString(agiContext + ":" + contextStub + "\n")
+	b.WriteString(agiExtension + ":" + extensionStub + "\n")
+	b.WriteString(agiPriority + ":" + priorityStub + "\n")
+	b.WriteString(agiEnhanced + ":" + enhancedStub + "\n")
+	b.WriteString(agiAccountCode + ":" + accountCodeStub + "\n")
+	b.WriteString(agiThreadID + ":" + threadIDStub + "\n")
+	b.WriteString(agiNetworkScript + ":" + scriptStub + "\n")
+	b.WriteString("\n")
+	return b
+}
+
 func TestNewContext(t *testing.T) {
-	requestStub := "request"
-	channelStub := "channel"
-	languageStub := "language"
-	typeStub := "type"
-	uniqueIDStub := "uniqueID"
-	versionStub := "version"
-	callerIDStub := "callerID"
-	callerIDNameStub := "callerIDName"
-	callingPresStub := "callingPres"
-	callingANI2Stub := "callingANI2"
-	callingTONStub := "callingTON"
-	callingTNSStub := "callingTNS"
-	dNIDStub := "DNID"
-	rDNISStub := "RDNIS"
-	contextStub := "context"
-	extensionStub := "extension"
-	priorityStub := "priority"
-	enhancedStub := "enhanced"
-	accountCodeStub := "accountCode"
-	threadIDStub := "threadID"
-	scriptStub := "script"
+	ctx, _ := fetchContext(createBuffer())
 
-	lines := []string{
-		agiRquest + ":" + requestStub,
-		agiChannel + ":" + channelStub,
-		agiLanguage + ":" + languageStub,
-		agiType + ":" + typeStub,
-		agiUniqueID + ":" + uniqueIDStub,
-		agiVersion + ":" + versionStub,
-		agiCallerID + ":" + callerIDStub,
-		agiCallerIDName + ":" + callerIDNameStub,
-		agiCallingPres + ":" + callingPresStub,
-		agiCallingANI2 + ":" + callingANI2Stub,
-		agiCallingTON + ":" + callingTONStub,
-		agiCallingTNS + ":" + callingTNSStub,
-		agiDNID + ":" + dNIDStub,
-		agiRDNIS + ":" + rDNISStub,
-		agiContext + ":" + contextStub,
-		agiExtension + ":" + extensionStub,
-		agiPriority + ":" + priorityStub,
-		agiEnhanced + ":" + enhancedStub,
-		agiAccountCode + ":" + accountCodeStub,
-		agiThreadID + ":" + threadIDStub,
-		agiNetworkScript + ":" + scriptStub,
+	if ctx == nil {
+		t.Fail()
 	}
-
-	ctx := newContext(lines)
 
 	if ctx.RequestURL != requestStub ||
 		ctx.ChannelName != channelStub ||
@@ -100,53 +110,9 @@ func TestNewContext(t *testing.T) {
 }
 
 func BenchmarkNewContext(b *testing.B) {
-	requestStub := "request"
-	channelStub := "channel"
-	languageStub := "language"
-	typeStub := "type"
-	uniqueIDStub := "uniqueID"
-	versionStub := "version"
-	callerIDStub := "callerID"
-	callerIDNameStub := "callerIDName"
-	callingPresStub := "callingPres"
-	callingANI2Stub := "callingANI2"
-	callingTONStub := "callingTON"
-	callingTNSStub := "callingTNS"
-	dNIDStub := "DNID"
-	rDNISStub := "RDNIS"
-	contextStub := "context"
-	extensionStub := "extension"
-	priorityStub := "priority"
-	enhancedStub := "enhanced"
-	accountCodeStub := "accountCode"
-	threadIDStub := "threadID"
-	scriptStub := "script"
-
-	lines := []string{
-		agiRquest + ":" + requestStub,
-		agiChannel + ":" + channelStub,
-		agiLanguage + ":" + languageStub,
-		agiType + ":" + typeStub,
-		agiUniqueID + ":" + uniqueIDStub,
-		agiVersion + ":" + versionStub,
-		agiCallerID + ":" + callerIDStub,
-		agiCallerIDName + ":" + callerIDNameStub,
-		agiCallingPres + ":" + callingPresStub,
-		agiCallingANI2 + ":" + callingANI2Stub,
-		agiCallingTON + ":" + callingTONStub,
-		agiCallingTNS + ":" + callingTNSStub,
-		agiDNID + ":" + dNIDStub,
-		agiRDNIS + ":" + rDNISStub,
-		agiContext + ":" + contextStub,
-		agiExtension + ":" + extensionStub,
-		agiPriority + ":" + priorityStub,
-		agiEnhanced + ":" + enhancedStub,
-		agiAccountCode + ":" + accountCodeStub,
-		agiThreadID + ":" + threadIDStub,
-		agiNetworkScript + ":" + scriptStub,
-	}
+	buf := createBuffer()
 
 	for i := 0; i < b.N; i++ {
-		newContext(lines)
+		fetchContext(buf)
 	}
 }

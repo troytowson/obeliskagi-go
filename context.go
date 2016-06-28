@@ -1,9 +1,13 @@
 package obeliskagi
 
-import "strings"
+import (
+	"bufio"
+	"io"
+	"strings"
+)
 
 const (
-	agiRquest          = "agi_request"
+	agiRequest         = "agi_request"
 	agiChannel         = "agi_channel"
 	agiLanguage        = "agi_language"
 	agiType            = "agi_type"
@@ -52,11 +56,24 @@ type Context struct {
 	Script       string
 }
 
-func newContext(lines []string) *Context {
+func fetchContext(reader io.Reader) (*Context, error) {
+	scn := bufio.NewScanner(reader)
+	var lines []string
+	for scn.Scan() {
+		line := scn.Text()
+		if line == "" {
+			break
+		}
+		lines = append(lines, line)
+	}
+	if err := scn.Err(); err != nil {
+		return nil, err
+	}
+
 	ctx := &Context{}
 
 	mapLinesToFields(lines, map[string]func(string){
-		agiRquest:        func(v string) { ctx.RequestURL = v },
+		agiRequest:       func(v string) { ctx.RequestURL = v },
 		agiChannel:       func(v string) { ctx.ChannelName = v },
 		agiLanguage:      func(v string) { ctx.Language = v },
 		agiType:          func(v string) { ctx.Type = v },
@@ -79,7 +96,7 @@ func newContext(lines []string) *Context {
 		agiNetworkScript: func(v string) { ctx.Script = v },
 	})
 
-	return ctx
+	return ctx, nil
 }
 
 func mapLinesToFields(lines []string, actions map[string]func(string)) {
